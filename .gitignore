@@ -1,0 +1,19 @@
+# Python-generated files
+__pycache__/
+*.py[oc]
+build/
+dist/
+wheels/
+*.egg-info
+
+# Virtual environments
+.venv
+
+# uv specific files
+.python-version
+pyproject.toml
+uv.lock
+
+# extension specific files
+stock-trend-output.md
+stock-trend-output.txt
