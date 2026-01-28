@@ -14,7 +14,7 @@ class StockModel(nn.Module):
         return self.net(x).squeeze()
 
 class StockCNN(nn.Module):
-    def __init__(self, window_size):
+    def __init__(self):
         super().__init__()
 
         self.features = nn.Sequential(
