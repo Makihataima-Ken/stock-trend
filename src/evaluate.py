@@ -1,12 +1,12 @@
 import torch
 import numpy as np
 
-def evaluate(model, X, y):
+def evaluate(model, X, y, device="cpu"):
     model.eval()
     with torch.no_grad():
-        logits = model(torch.tensor(X, dtype=torch.float32))
+        X = torch.tensor(X, dtype=torch.float32).to(device)
+        logits = model(X)
         probs = torch.sigmoid(logits).numpy()
 
     preds = (probs > 0.5).astype(int)
-    accuracy = (preds == y).mean()
-    return accuracy
+    return (preds == y).mean()
