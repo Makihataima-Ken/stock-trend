@@ -76,7 +76,7 @@ def make_windows(data, window = 30, threshold=0.003):
 
     for i in range(len(prices) - window - 1):
         w = prices[i:i+window]
-        ret = (prices[i+window] - prices[i+window-1]) / prices[i+window-1]
+        ret = (prices[i+window] - prices[i]) / prices[i]
 
         if ret > threshold:
             label = 1   # up
@@ -156,35 +156,3 @@ def prepare_data(df):
     df = df.dropna()
     
     return df
-
-
-def make_windows(data, window=30, threshold=0.003):
-    o = data["Open"].values
-    h = data["High"].values
-    l = data["Low"].values
-    c = data["Close"].values
-
-    X, y = [], []
-
-    for i in range(len(c) - window - 1):
-        # Shape: (window, 4)
-        w = np.stack([
-            o[i:i+window],
-            h[i:i+window],
-            l[i:i+window],
-            c[i:i+window],
-        ], axis=1)
-
-        future_ret = (c[i+window] - c[i+window-1]) / c[i+window-1]
-
-        if future_ret > threshold:
-            label = 1
-        elif future_ret < -threshold:
-            label = 0   # use 0/1 for BCE
-        else:
-            continue
-        
-        X.append(w)
-        y.append(label)
-
-    return np.array(X, dtype=np.float32), np.array(y, dtype=np.float32)
