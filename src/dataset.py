@@ -76,7 +76,7 @@ def make_windows(data, window = 30, threshold=0.003):
 
     for i in range(len(prices) - window - 1):
         w = prices[i:i+window]
-        ret = (prices[i+window] - prices[i]) / prices[i]
+        ret = (prices[i + window] - prices[i + window - 1]) / prices[i + window - 1]
 
         if ret > threshold:
             label = 1   # up
