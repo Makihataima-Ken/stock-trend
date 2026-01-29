@@ -6,10 +6,67 @@ from torch.utils.data import Dataset
 from torch.utils.data import DataLoader
 import torch
 
-def load_data(path):
-    df = pd.read_csv(path)
+DEFAULT_COLS = ["Date", "Open", "High", "Low", "Close", "Volume", "Ticker"]
+
+
+def load_data(
+    path,
+    frac=1.0,
+    random_state=None,
+    usecols=None,
+    chunksize=200_000,
+    sample_strategy="sequential",
+):
+    """Load dataset with optional subsampling.
+
+    - Uses pyarrow when available (2-3x faster).
+    - Reads only needed columns by default.
+    - When frac<1, defaults to **sequential** sampling so time windows stay
+      contiguous. Pass sample_strategy="random" to keep the prior random
+      chunked sampling.
+    """
+    if not 0 < frac <= 1:
+        raise ValueError("frac must be in (0, 1]")
+
+    cols = usecols or DEFAULT_COLS
+
+    def _read_full():
+        try:
+            return pd.read_csv(path, engine="pyarrow", usecols=cols)
+        except Exception:
+            return pd.read_csv(path, usecols=cols)
+
+    # Fast path: full read or sequential time-ordered slice
+    if frac >= 1 or sample_strategy == "sequential":
+        df = _read_full()
+    else:
+        rng = np.random.default_rng(random_state)
+        sampled_chunks = []
+
+        # Stream through the file; keep each row with probability `frac`.
+        try:
+            reader = pd.read_csv(path, engine="pyarrow", usecols=cols, chunksize=chunksize)
+        except Exception:
+            reader = pd.read_csv(path, usecols=cols, chunksize=chunksize)
+
+        for chunk in reader:
+            mask = rng.random(len(chunk)) < frac
+            if mask.any():
+                sampled_chunks.append(chunk.loc[mask])
+
+        if sampled_chunks:
+            df = pd.concat(sampled_chunks, ignore_index=True)
+        else:
+            # Handle extremely small datasets with frac << 1
+            df = pd.DataFrame(columns=cols)
+
     df["Date"] = pd.to_datetime(df["Date"])
     df = df.sort_values("Date")
+
+    if frac < 1 and sample_strategy == "sequential":
+        keep = max(1, int(len(df) * frac))
+        df = df.iloc[:keep]
+
     return df
 
 def make_windows(data, window = 30, threshold=0.003):
@@ -23,7 +80,7 @@ def make_windows(data, window = 30, threshold=0.003):
         if ret > threshold:
             label = 1   # up
         elif ret < -threshold:
-            label = -1   # down
+            label = 0   # down
         else:
             continue    # flat
 
