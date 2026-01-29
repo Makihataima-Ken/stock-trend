@@ -65,7 +65,8 @@ def load_data(
 
     if frac < 1 and sample_strategy == "sequential":
         keep = max(1, int(len(df) * frac))
-        df = df.iloc[:keep]
+        # For time-ordered evaluation we want the most recent slice, not the oldest.
+        df = df.iloc[-keep:]
 
     return df
 
