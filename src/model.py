@@ -5,6 +5,7 @@ class StockMLP(nn.Module):
     def __init__(self, input_dim):
         super().__init__()
         self.net = nn.Sequential(
+            nn.Flatten(),
             nn.Linear(input_dim, 128),
             nn.ReLU(),
             nn.Dropout(0.3),
